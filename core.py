@@ -140,6 +140,33 @@ class Vector2:
             return Vector2(0, 0)
         
         return Vector2(self.x / lenght, self.y / lenght)
+    
+    @staticmethod
+    def distance_between_sq(a : 'Vector2', b : 'Vector2') -> float:
+        return (b.x - a.x) ** 2 + (b.y - a.y) ** 2
+    
+    @staticmethod
+    def distance_between(a : 'Vector2', b : 'Vector2') -> float:
+        return math.sqrt(Vector2.distance_between_sq(a, b))
+
+    @staticmethod
+    def move_towards(a : 'Vector2', b : 'Vector2', speed : float):
+        direction = Vector2(b.x - a.x, b.y - a.y)
+
+        dist_sq = direction.lenght_sq()
+
+        if dist_sq == 0:
+            return
+        
+        if dist_sq <= speed * speed:
+            a.x = b.x
+            a.y = b.y
+            return
+        
+        direction = direction.normalize()
+
+        a.x += direction.x * speed
+        a.y += direction.y * speed
 
 @final
 class TimedTask:
@@ -268,32 +295,3 @@ class Input:
     @staticmethod
     def get_key_down(key : int) -> bool:
         return key in Input.keys_down
-
-@final
-class Physics:
-    @staticmethod
-    def distance_between_sq(a : Vector2, b : Vector2) -> float:
-        return (b.x - a.x) ** 2 + (b.y - a.y) ** 2
-    
-    @staticmethod
-    def distance_between(a : Vector2, b : Vector2) -> float:
-        return math.sqrt(Physics.distance_between_sq(a, b))
-    
-    @staticmethod
-    def move_towards(a : Vector2, b : Vector2, speed : float):
-        direction = Vector2(b.x - a.x, b.y - a.y)
-
-        dist_sq = direction.lenght_sq()
-
-        if dist_sq == 0:
-            return
-        
-        if dist_sq <= speed * speed:
-            a.x = b.x
-            a.y = b.y
-            return
-        
-        direction = direction.normalize()
-
-        a.x += direction.x * speed
-        a.y += direction.y * speed

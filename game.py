@@ -47,10 +47,25 @@ class Card(KoiKoiGameObject):
         sprite = None
         card_month = 0
 
-        if card_type == CARD_TYPE_CRANE:
-            width = CARD_CRANE_RECT_WIDTH
-            height = CARD_CRANE_RECT_HEIGHT
-            sprite = CARD_CRANE_SPRITE
+        if card_type == CARD_TYPE_PINE_CRANE:
+            width = CARD_PINE_CRANE_RECT_WIDTH
+            height = CARD_PINE_CRANE_RECT_HEIGHT
+            sprite = CARD_PINE_CRANE_SPRITE
+            card_month = JANUARY
+        elif card_type == CARD_TYPE_PINE_PLAIN1:
+            width = CARD_PINE_PLAIN1_RECT_WIDTH
+            height = CARD_PINE_PLAIN1_RECT_HEIGHT
+            sprite = CARD_PINE_PLAIN1_SPRITE
+            card_month = JANUARY
+        elif card_type == CARD_TYPE_PINE_PLAIN2:
+            width = CARD_PINE_PLAIN2_RECT_WIDTH
+            height = CARD_PINE_PLAIN2_RECT_HEIGHT
+            sprite = CARD_PINE_PLAIN2_SPRITE
+            card_month = JANUARY
+        elif card_type == CARD_TYPE_PINE_RED_POEM_TANZAKU:
+            width = CARD_PINE_RED_POEM_TANZAKU_RECT_WIDTH
+            height = CARD_PINE_RED_POEM_TANZAKU_RECT_HEIGHT
+            sprite = CARD_PINE_RED_POEM_TANZAKU_SPRITE
             card_month = JANUARY
 
         self.card_front_sprite = sprite
@@ -68,31 +83,6 @@ class Card(KoiKoiGameObject):
 
         self.faceup = faceup
 
-    def start(self):
-        pass
-
-    def move_to(self, destination : Vector2):
-        self.start_timed_task(self.move_to_task(destination))
-    
-    def move_to_task(self, destination : Vector2) -> Task:
-        max_speed = 100
-        min_speed = 20
-
-        initial_distance_sq = Physics.distance_between_sq(self.position, destination)
-
-        while True:
-            distance_sq = Physics.distance_between_sq(self.position, destination)
-
-            if distance_sq == 0:
-                break
-
-            ratio = distance_sq / initial_distance_sq
-            velocity = max(min_speed, max_speed * ratio)
-
-            Physics.move_towards(self.position, destination, velocity)
-
-            yield 0
-    
     @property
     def faceup(self) -> bool:
         return self._faceup
@@ -105,6 +95,28 @@ class Card(KoiKoiGameObject):
             self.sprite = self.card_front_sprite
         else:
             self.sprite = CARD_BACK_SPRITE
+
+    def move_to(self, destination : Vector2):
+        self.start_timed_task(self.move_to_task(destination))
+    
+    def move_to_task(self, destination : Vector2) -> Task:
+        max_speed = 200
+        min_speed = 12
+
+        initial_distance_sq = Vector2.distance_between_sq(self.position, destination)
+
+        while True:
+            distance_sq = Vector2.distance_between_sq(self.position, destination)
+
+            if distance_sq == 0:
+                break
+
+            ratio = distance_sq / initial_distance_sq
+            velocity = max(min_speed, max_speed * ratio)
+
+            Vector2.move_towards(self.position, destination, velocity)
+
+            yield 0
 
 class CardSlot(KoiKoiGameObject):
     def __init__(
@@ -138,7 +150,7 @@ class CardSlotManager(interface):
     def set(self, card : Card):
         pass
 
-    def first_free_slot(self) -> CardSlot:
+    def get_free_slot(self) -> CardSlot:
         pass
 
 @implements(CardSlotManager)
@@ -176,12 +188,12 @@ class CardTable(KoiKoiGameObject):
         return slots
     
     def set(self, card : Card):
-        slot = self.first_free_slot()
+        slot = self.get_free_slot()
 
         if slot != None:
             slot.bind(card)
 
-    def first_free_slot(self) -> CardSlot:
+    def get_free_slot(self) -> CardSlot:
         for slot in self.slots:
             if slot.is_free():
                 return slot
@@ -220,12 +232,12 @@ class CardHand(KoiKoiGameObject):
         return slots
     
     def set(self, card : Card):
-        slot = self.first_free_slot()
+        slot = self.get_free_slot()
 
         if slot != None:
             slot.bind(card)
 
-    def first_free_slot(self) -> CardSlot:
+    def get_free_slot(self) -> CardSlot:
         for slot in self.slots:
             if slot.is_free():
                 return slot
@@ -233,9 +245,6 @@ class CardHand(KoiKoiGameObject):
         return None
 
 class CardDeck(KoiKoiGameObject):
-    """
-    Represents the deck of cards.
-    """
     def __init__(
             self,
             context : Context,
@@ -260,17 +269,45 @@ class CardDeck(KoiKoiGameObject):
     def start(self):
         self.start_timed_task(self.distribute_cards())
 
-    def update(self):
-        pass
-
     def make_cards(self) -> list[Card]:
         cards : list[Card] = []
 
-        for i in range(0, 10):
-            card = Card(self.context, self.rect.x - i, self.rect.y, CARD_TYPE_CRANE, False)
+        for i in range(0, 40):
+            card = Card(self.context, self.rect.x - i, self.rect.y, CARD_TYPE_PINE_PLAIN2, False)
             cards.append(card)
 
         return cards
 
     def distribute_cards(self) -> Task:
+        table_slot = self.card_table.get_free_slot()
+        player_hand_slot = self.player_hand.get_free_slot()
+        opponent_hand_slot = self.opponent_hand.get_free_slot()
+
+        while len(self.cards) > 0 and (table_slot != None or player_hand_slot != None or opponent_hand_slot != None):
+            if opponent_hand_slot != None:
+                self.deck_top_to_slot(opponent_hand_slot)
+                yield 333
+            if player_hand_slot != None:
+                self.deck_top_to_slot(player_hand_slot)
+                yield 333
+            if table_slot != None:
+                self.deck_top_to_slot(table_slot, True)
+                yield 333
+            
+            table_slot = self.card_table.get_free_slot()
+            player_hand_slot = self.player_hand.get_free_slot()
+            opponent_hand_slot = self.opponent_hand.get_free_slot()
+
         yield 0
+    
+    def deck_top_to_slot(self, slot : CardSlot, faceup : bool = False):
+            if len(self.cards) == 0:
+                return
+
+            top_card = self.cards.pop()
+
+            if faceup:
+                top_card.faceup = True
+
+            top_card.move_to(slot.position)
+            slot.bind(top_card)

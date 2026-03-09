@@ -1,0 +1,4 @@
+USE NOISE WITH THE FOLLOWING SETTINGS FOR A SANDY LOOK:
+	- Intensity: 20-25
+	- Color Saturation: 0
+	- Coverage: 100

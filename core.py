@@ -3,6 +3,7 @@ import math
 from typing import Callable, final, Generator
 
 Task = Generator[int, None, None]
+Color = tuple[int, int, int]
 
 class Game:
     def start(self):
@@ -14,7 +15,7 @@ class Game:
 @final
 class Runner:
     @staticmethod
-    def run(window_width : int = 0, window_height : int = 0, window_title : str = 0, flags : int = False, game : Game = None):
+    def run(window_width : int = 0, window_height : int = 0, window_title : str = 0, flags : int = 0, game : Game = None):
         pygame.init()
         Window.init(window_width, window_height, window_title, flags)
 
@@ -61,7 +62,13 @@ class Sprite:
             surface : pygame.Surface
         ):
             self.surface = surface
-    
+
+    def blend(self, color : Color) -> 'Sprite':
+        surface = self.surface.copy().convert_alpha()
+        surface.fill(color, special_flags=pygame.BLEND_RGBA_MULT)
+
+        return Sprite(surface)
+
     @staticmethod
     def load(resource : str, width : int, height : int):
         surface = pygame.image.load(resource)
@@ -121,6 +128,11 @@ class Context:
 
     def find_with_tag(self, tag : str) -> list['GameObject']:
         return self.game_objects[tag]
+    
+    def bring_to_front(self, game_object : 'GameObject'):
+        bucket = self.find_with_tag(game_object.tag)
+        bucket.remove(game_object)
+        bucket.append(game_object)
 
 class Vector2:
     def __init__(self, x : float, y : float):
@@ -206,7 +218,7 @@ class GameObject:
             width : float = 0,
             height : float = 0,
             sprite: Sprite = None,
-            color : tuple[int, int, int] = (0, 0, 0),
+            color : Color = (0, 0, 0),
             tag : str = None
         ):
 
@@ -282,6 +294,9 @@ class GameObject:
     @final
     def start_timed_task(self, func : Callable):
         self.timed_tasks.append(TimedTask(func))
+
+    def bring_to_front(self):
+        self.context.bring_to_front(self)
 
 @final
 class Input:

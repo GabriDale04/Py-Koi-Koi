@@ -1,6 +1,7 @@
 from core import *
 from config import *
 from interface import *
+import random
 
 class KoiKoiGameObject(GameObject):
     def __init__(
@@ -11,7 +12,7 @@ class KoiKoiGameObject(GameObject):
             width : float = 0, 
             height : float = 0, 
             sprite : Sprite = None, 
-            color : tuple[int, int, int] = (0, 0, 0), 
+            color : Color = (0, 0, 0), 
             tag = None
         ):
 
@@ -47,7 +48,7 @@ class Card(KoiKoiGameObject):
         sprite = None
         card_month = 0
 
-        if card_type == CARD_TYPE_PINE_CRANE:
+        if card_type > 3 or card_type == CARD_TYPE_PINE_CRANE:
             width = CARD_PINE_CRANE_RECT_WIDTH
             height = CARD_PINE_CRANE_RECT_HEIGHT
             sprite = CARD_PINE_CRANE_SPRITE
@@ -271,11 +272,15 @@ class CardDeck(KoiKoiGameObject):
 
     def make_cards(self) -> list[Card]:
         cards : list[Card] = []
+        cards_types = list(range(0, 40))
 
         for i in range(0, 40):
-            card = Card(self.context, self.rect.x - i, self.rect.y, CARD_TYPE_PINE_PLAIN2, False)
-            cards.append(card)
+            choice = random.choice(cards_types)
+            cards_types.remove(choice)
 
+            card = Card(self.context, self.rect.x - i, self.rect.y, choice, True)
+            cards.append(card)
+            
         return cards
 
     def distribute_cards(self) -> Task:
@@ -305,9 +310,29 @@ class CardDeck(KoiKoiGameObject):
                 return
 
             top_card = self.cards.pop()
+            top_card.bring_to_front()
 
             if faceup:
                 top_card.faceup = True
 
             top_card.move_to(slot.position)
             slot.bind(top_card)
+
+class CardHighlight(KoiKoiGameObject):
+    def __init__(
+            self,
+            context : Context,
+            x : float,
+            y : float,
+            highlight_color : Color
+        ):
+
+        sprite = CARD_HIGHLIGHT_SPRITE.blend(highlight_color)
+
+        super().__init__(
+            context = context,
+            x = x,
+            y = y,
+            sprite = sprite,
+            color = CARD_HIGHLIGHT_RECT_COLOR
+        )
